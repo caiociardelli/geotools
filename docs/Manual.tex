@@ -78,7 +78,7 @@ The GeoTools Package requires the following software and libraries:
         \begin{itemize}
             \item NumPy: Data processing and arrays (used in compute\_rays.py, resample\_1d\_model.py).
             \item Matplotlib: Plotting (used in resample\_1d\_model.py and optionally in compute\_rays.py).
-            \item pytracer: Seismic ray tracing library (required for compute\_rays.py).
+            \item SeisTracer: Seismic ray tracing library (required for compute\_rays.py).
             \item argparse: Command-line parsing (standard library).
             \item heapq, math: Standard libraries for algorithms and calculations.
             \item os, shutil: Standard libraries for file handling.
@@ -96,7 +96,7 @@ Ensure all dependencies are installed on your system. For Python libraries, use 
 pip install numpy matplotlib paraview
 \end{lstlisting}
 
-Note: pytracer requires additional installation steps; refer to its documentation. The package assumes access to ETOPO topography data in extra/earth\_relief\_15m.topo for surface topography incorporation.
+Note: SeisTracer requires additional installation steps; refer to its documentation. The package assumes access to ETOPO topography data in extra/earth\_relief\_15m.topo for surface topography incorporation.
 
 \section{Directory Structure}
 
@@ -257,7 +257,7 @@ Example (from workflow): python utils/resample\_1d\_model.py -i models/iasp91.mo
 
 \subsection{compute\_rays.py (utils/compute\_rays.py)}
 
-This Python script computes seismic ray paths for source-receiver pairs using pytracer. It generates directories with VTK/text files for rays, phase lists, and optional PNG plots. Supports multiple phases and saves receiver elevation.
+This Python script computes seismic ray paths for source-receiver pairs using SeisTracer. It generates directories with VTK/text files for rays, phase lists, and optional PNG plots. Supports multiple phases and saves receiver elevation.
 
 Usage:
 

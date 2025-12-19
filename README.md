@@ -10,7 +10,7 @@ The _GeoTools_ Package is a geosciences software package for computing seismic r
 
 ## Features
 
-* **Seismic Ray Tracing**: Computes ray paths for source-receiver pairs using the `pytracer` library.
+* **Seismic Ray Tracing**: Computes ray paths for source-receiver pairs using the `SeisTracer` library.
 * **Travel Time Calculation**: Calculates seismic travel times for specified phases using a spherical mesh.
 * **Synthetic Gravity**: Computes gravitational field components in parallel, accounting for topography.
 * **Mesh Generation**: Creates a spherical mesh based on icosahedron refinement, with optional ETOPO topography integration.
@@ -38,7 +38,7 @@ Ensure the following are installed:
     ```bash
     pip install numpy matplotlib paraview
     ```
-    *Note: `pytracer` may require additional setup; see its documentation.*
+    *Note: `SeisTracer` may require additional setup; see its documentation.*
 * **GMT (Generic Mapping Tools)**: For 2D plotting (`plot_mesh.bash`, `plot_gravity.bash`).
 * **ParaView**: With Python support for 3D visualization (`pvsm_generator.py`).
 * **OpenMPI**: For parallel gravity computation (`gravity.c`).
@@ -152,7 +152,7 @@ For help:
     python utils/resample_1d_model.py -i models/iasp91.model -o input/input.model
     ```
 
-  * **`compute_rays.py`**: Computes seismic ray paths using pytracer.
+  * **`compute_rays.py`**: Computes seismic ray paths using `SeisTracer'.
 
     ```bash
     python utils/compute_rays.py -r input/receivers.dat -s input/sources.dat
@@ -219,6 +219,8 @@ The package is under active development with planned features:
   * Earth's ellipticity corrections.
   * Inversion for 3D velocity/density and Moho topography.
 
+Development is hosted on GitHub in the [caio.ciardelli/geotools repository](https://github.com/caiociardelli/geotools).
+
 Contributions are welcome; please contact the author for collaboration details.
 
 -----
@@ -237,4 +239,4 @@ Northwestern University, Department of Earth and Planetary Sciences
 
   * Prof. Suzan van der Lee for supervision and providing the IASP91 model.
   * Northwestern University for support.
-  * Open-source communities for GMT, ParaView, OpenMPI, and pytracer.
+  * Open-source communities for GMT, ParaView, OpenMPI, and SeisTracer.

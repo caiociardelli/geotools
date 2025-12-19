@@ -22,13 +22,13 @@
 
 -----------------------------------------------------------------------------------------------
 
-This script computes seismic ray paths for multiple source-receiver pairs using the pytracer library.
+This script computes seismic ray paths for multiple source-receiver pairs using the SeisTracer library.
 It generates a directory for each pair containing VTK files for ray paths, text files with coordinates
 and branch types, phase lists, and optional PNG plots. It also saves the receiver elevation in each
 directory.
 
 Requirements:
-- pytracer library
+- seistracer library
 - numpy library
 - os and shutil for file handling
 - argparse for command-line arguments
@@ -39,7 +39,7 @@ Requirements:
 import os
 import shutil
 import numpy as np
-import pytracer
+import seistracer
 import argparse
 
 EPSILON = 1e-15  # Small value to avoid division by zero
@@ -167,7 +167,7 @@ if __name__ == '__main__':
   sources = read_sources(args.sources)
 
   # Initialize tracer object
-  tracer = pytracer.Tracer()
+  tracer = seistracer.Tracer()
 
   # Mapping for branch types
   mapping = {
