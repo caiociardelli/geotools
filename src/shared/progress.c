@@ -1,0 +1,54 @@
+/*
+ GeoTools
+
+ Author: Caio Ciardelli, Northwestern University, October 2025
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+----------------------------------------------------------------------------------------------- */
+
+#include <stdio.h>
+#include <time.h>
+
+void progressBar (int index, int step, int n, clock_t starttime)
+{
+  /* Displays a progress bar based on iteration index and elapsed time. */
+  if (index % step == 0 || index == n - 1)
+  {
+    double percentage = 100 * (double) (index + 1) / n;
+
+    int p = percentage / 2;
+
+    double cpu_time_used = ((double) (clock () - starttime))
+                         / (60 * CLOCKS_PER_SEC);
+
+    fprintf (stderr, "\r [");
+
+    for (int j = 0; j < p; j++)
+    {
+      /* Print a hash for each 2% of progress */
+      fprintf (stderr, "#");
+    }
+
+    for (int j = p; j < 50; j++)
+    {
+      /* Fill remaining space with spaces up to 50 characters */
+      fprintf (stderr, " ");
+    }
+
+    fprintf (stderr, "] [%.1lf%%] [Elapsed time: %.2lf min]",
+             percentage, cpu_time_used);
+  }
+}

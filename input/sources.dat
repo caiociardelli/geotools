@@ -1,0 +1,3 @@
+# Earthquake data
+# Event_ID    Latitude [degrees]    Longitude [degrees]    Depth [km]
+EQ001             90.000000               0.000000          480.0

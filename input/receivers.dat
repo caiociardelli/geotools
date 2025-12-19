@@ -1,0 +1,3 @@
+# Seismic receiver data
+# Receiver_ID  Latitude [degrees]    Longitude [degrees]  Elevation [m]
+STA01             -90.000000               0.000000          2825.0
