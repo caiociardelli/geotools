@@ -137,7 +137,7 @@ static void incorparate3DModel (int nv, struct Vertex vtx[nv],
 static void filterTopography (int nlat, int nlon,
                               double lon[nlat][nlon],
                               double lat[nlat][nlon],
-                              double elev[nlat][nlon],
+                              double topo[nlat][nlon],
                               int nv, struct Vertex vtx[nv],
                               int ns, double r[nv][ns],
                               double length)
@@ -268,7 +268,7 @@ static void filterTopography (int nlat, int nlon,
     /* Accumulator for weights */
     double sum_weight = 0.0;
     /* Accumulator for weighted elevations */
-    double sum_elev   = 0.0;
+    double sum_topo   = 0.0;
 
     /* Compute weighted average elevation within the filter region */
     for (int i = i_start; i <= i_end; i++)
@@ -296,7 +296,7 @@ static void filterTopography (int nlat, int nlon,
         double weight = exp (-(dist * dist)
                       / (2 * square (sigma) + EPSILON));
 
-        sum_elev   += weight * elev[i][j];
+        sum_topo   += weight * topo[i][j];
         sum_weight += weight;
       }
 
@@ -321,18 +321,258 @@ static void filterTopography (int nlat, int nlon,
           double weight = exp (- (dist * dist)
                         / (2 * square (sigma) + EPSILON));
 
-          sum_elev   += weight * elev[i][j];
+          sum_topo   += weight * topo[i][j];
           sum_weight += weight;
         }
       }
     }
 
-    /* Average elevation */
-    double elevation = (sum_weight > 0.0) ? sum_elev / sum_weight : 0.0;
-    /* Scaling factor for radius adjustment */
-    double scaling_factor = 1.0 + elevation / (EARTH_RADIUS * 1E3);
+    /* Average topographic elevation */
+    double elevation = (sum_weight > 0.0) ? sum_topo / sum_weight : 0.0;
+    /* Ratio of elevation to Earth radius */
+    double ratio = elevation / (EARTH_RADIUS * 1E3);
 
-    r[i][0] *= scaling_factor;
+    /* Compute correction intervals */
+    double rmin = R_MOHO_MAX;
+    double rref = EARTH_RADIUS;
+
+    /* Apply correction */
+    for (int k = 0; k < ns; k++)
+    {
+      if (r[i][k] < rmin) break;
+
+      double gamma = (r[i][k] - rmin) / (rref - rmin);
+
+      double scaling_factor = 1.0 + gamma * ratio;
+
+      r[i][k] *= scaling_factor;
+
+      if (r[i][k] < rmin) r[i][k] = rmin;
+    }
+  }
+}
+
+static void filterMoho (int nlat, int nlon,
+                        double lon[nlat][nlon],
+                        double lat[nlat][nlon],
+                        double moho[nlat][nlon],
+                        double moho_radius,
+                        int nv, struct Vertex vtx[nv],
+                        int ns, double r[nv][ns],
+                        double length)
+{
+  /* Applies a Gaussian filter to incorporate surface topography into the mesh. */  
+  /* Calculate Gaussian sigma based on mesh length and Earth's radius */
+  double sigma = sqrt (log (2.0)) * length / (PI * moho_radius);
+
+  /* Process each vertex to adjust its radius based on topography */
+  for (int i = 0; i < nv; i++)
+  {
+    double radius, theta, phi;
+    /* Convert vertex coordinates to spherical */
+    xYZ2RThetaPhi (vtx[i].p.x, vtx[i].p.y, vtx[i].p.z,
+                   &radius, &theta, &phi);
+
+    /* Compute center latitude in degrees */
+    double lat_center = 90.0 - theta * 180.0 / PI;
+    /* Compute center longitude in degrees */
+    double lon_center = phi * 180.0 / PI;
+    
+    /* Normalize longitude to [-180, 180] */
+    lon_center = fmod (lon_center + 180.0, 360.0) - 180.0;
+
+    /* Convert sigma to degrees */
+    double sigma_deg = sigma * 180.0 / PI;
+    /* Define filter range as 3 times sigma in degrees */
+    double delta_deg = 3.0 * sigma_deg;
+    /* Define filter range in radians */
+    double delta = 3.0 * sigma;
+
+    /* Clamp minimum latitude */
+    double lat_min_clamp = fmax (-90.0, lat_center - delta_deg);
+    /* Clamp maximum latitude */
+    double lat_max_clamp = fmin ( 90.0, lat_center + delta_deg);
+
+    double lat0 = lat[0][0];
+    /* Latitude step size */
+    double dlat = lat[1][0] - lat[0][0];
+
+    /* Starting index in float */
+    double i_float_start = (lat_max_clamp - lat0) / dlat;
+    /* Ending index in float */
+    double i_float_end = (lat_min_clamp - lat0) / dlat;
+
+    /* Start index */
+    int i_start = fmax (0, (int) ceil (fmin (i_float_start, i_float_end)));
+    /* End index */
+    int i_end = fmin (nlat - 1, (int) floor (fmax (i_float_start, i_float_end)));
+
+    if (i_start > i_end)
+    {
+      fprintf (stderr, "Error: invalid latitude range in function filterTopography!\n");
+
+      exit (EXIT_FAILURE);
+    }
+
+    double lon0 = lon[0][0];
+    /* Longitude step size */
+    double dlon = lon[0][1] - lon[0][0];
+
+    /* Minimum longitude of filter region */
+    double lon_min = lon_center - delta_deg;
+    /* Maximum longitude of filter region */
+    double lon_max = lon_center + delta_deg;
+
+    int j_start1, j_end1, j_start2 = -1, j_end2 = -1;
+    
+    /* Check if longitude wraps around */
+    bool wraps = (lon_min < -180.0 || lon_max > 180.0);
+
+    /* Handle longitude wrapping around the globe */
+    if (lon_max - lon_min >= 360.0)
+    {
+      j_start1 = 0;
+      j_end1 = nlon - 1;
+      
+      wraps = false;
+    }
+    
+    else if (wraps)
+    {
+      if (lon_min < -180.0)
+      {
+        /* Wrapped minimum longitude */
+        double lon_min_wrap = lon_min + 360.0;
+        /* Wrapped maximum longitude */
+        double lon_max_wrap = 180.0;
+        
+        j_start1 = fmax (0, (int) ceil ((lon_min_wrap - lon0) / dlon));
+        j_end1 = fmin (nlon - 1, (int) floor ((lon_max_wrap - lon0) / dlon));
+
+        /* Normal minimum longitude */
+        double lon_min_normal = -180.0;
+        /* Normal maximum longitude */
+        double lon_max_normal = lon_max;
+        
+        j_start2 = fmax (0, (int) ceil ((lon_min_normal - lon0) / dlon));
+        j_end2 = fmin (nlon - 1, (int) floor((lon_max_normal - lon0) / dlon));
+      }
+      
+      else
+      {
+        /* Wrapped minimum longitude */
+        double lon_min_wrap = -180.0;
+        /* Wrapped maximum longitude */
+        double lon_max_wrap = lon_max - 360.0;
+        
+        j_start1 = fmax (0, (int) ceil ((lon_min_wrap - lon0) / dlon));
+        j_end1 = fmin (nlon - 1, (int) floor ((lon_max_wrap - lon0) / dlon));
+
+        /* Normal minimum longitude */
+        double lon_min_normal = lon_min;
+        /* Normal maximum longitude */
+        double lon_max_normal = 180.0;
+        
+        j_start2 = fmax (0, (int) ceil ((lon_min_normal - lon0) / dlon));
+        j_end2 = fmin (nlon - 1, (int) floor ((lon_max_normal - lon0) / dlon));
+      }
+    }
+    
+    else
+    {
+      j_start1 = fmax (0, (int) ceil ((lon_min - lon0) / dlon));
+      j_end1 = fmin (nlon - 1, (int) floor ((lon_max - lon0) / dlon));
+    }
+
+    /* Accumulator for weights */
+    double sum_weight = 0.0;
+    /* Accumulator for weighted elevations */
+    double sum_moho   = 0.0;
+
+    /* Compute weighted average elevation within the filter region */
+    for (int i = i_start; i <= i_end; i++)
+    {
+      /* Grid point theta */
+      double theta_grid = (90.0 - lat[i][0]) * PI / 180.0;
+
+      int j_start = j_start1;
+      int j_end = j_end1;
+      
+      for (int j = j_start; j <= j_end; j++)
+      {
+        /* Grid point phi */
+        double phi_grid = lon[i][j] * PI / 180.0;
+        /* Cosine of angular distance */
+        double cos_dist = sin (theta) * sin (theta_grid) + cos (theta)
+                        * cos (theta_grid) * cos (phi - phi_grid);
+        
+        /* Angular distance in radians */
+        double dist = acos (fmax (fmin (cos_dist, 1.0), -1.0));
+
+        if (dist > delta) continue;
+
+        /* Gaussian weight */
+        double weight = exp (-(dist * dist)
+                      / (2 * square (sigma) + EPSILON));
+
+        sum_moho   += weight * moho[i][j];
+        sum_weight += weight;
+      }
+
+      if (wraps)
+      {
+        j_start = j_start2;
+        j_end = j_end2;
+        
+        for (int j = j_start; j <= j_end; j++)
+        {
+          /* Grid point phi */
+          double phi_grid = lon[i][j] * PI / 180.0;
+          /* Cosine of angular distance */
+          double cos_dist = sin (theta) * sin (theta_grid) + cos (theta)
+                          * cos (theta_grid) * cos (phi - phi_grid);
+          /* Angular distance in radians */
+          double dist = acos (fmax (fmin (cos_dist, 1.0), -1.0));
+
+          if (dist > delta) continue;
+
+          /* Gaussian weight */
+          double weight = exp (- (dist * dist)
+                        / (2 * square (sigma) + EPSILON));
+
+          sum_moho   += weight * moho[i][j];
+          sum_weight += weight;
+        }
+      }
+    }
+
+    /* Average Moho depth */
+    double depth = (sum_weight > 0.0) ? sum_moho / sum_weight : 0.0;
+    /* Get Moho depth for the 1D Earth model */   
+    double moho_depth = EARTH_RADIUS - moho_radius;
+    /* Compute ratio of Moho depth change to Moho radius */
+    double ratio = (depth + moho_depth) / moho_radius;
+
+    /* Compute correction intervals */
+    double rmin = R_MOHO_MIN;
+    double rref = moho_radius;
+    double rmax = R_MOHO_MAX;
+
+    /* Apply correction */
+    for (int k = 0; k < ns; k++)
+    {
+      if (r[i][k] > rmax) continue;
+      if (r[i][k] < rmin) break;
+
+      double gamma = (r[i][k] > rref) ? (rmax - r[i][k]) / (rmax - rref)
+                                      : (r[i][k] - rmin) / (rref - rmin);
+
+      double scaling_factor = 1.0 + gamma * ratio;
+
+      r[i][k] *= scaling_factor;
+
+      if (r[i][k] > rmax) r[i][k] = rmax;
+    }
   }
 }
 
@@ -398,32 +638,50 @@ int main (int argc, char *argv[])
   }
 
   /* Set path for topography file */
-  char topopath[MAX_PATH_LEN];
+  char topo_path[MAX_PATH_LEN];
 
-  snprintf (topopath, MAX_PATH_LEN, "extra/earth_relief_15m.topo");
+  snprintf (topo_path, MAX_PATH_LEN, "extra/earth_relief_15m.topo");
 
-  int nlat = N_LAT_ETOPO;
-  int nlon = N_LON_ETOPO;
+  int nlat_topo = N_LAT_ETOPO;
+  int nlon_topo = N_LON_ETOPO;
   
-  double lon[nlat][nlon];
-  double lat[nlat][nlon];
-  double elev[nlat][nlon];
+  double lon_topo[nlat_topo][nlon_topo];
+  double lat_topo[nlat_topo][nlon_topo];
+  double topo[nlat_topo][nlon_topo];
 
   /* Read topography data and handle errors */
-  if (checkTopographyIO (readTopography (nlat, nlon, topopath,
-                                         lon, lat, elev)))
+  if (checkTopographyIO (readTopography (nlat_topo, nlon_topo, topo_path,
+                                         lon_topo, lat_topo, topo)))
+    
+    exit (EXIT_FAILURE);
+
+  /* Set path for moho depth file */
+  char moho_path[MAX_PATH_LEN];
+
+  snprintf (moho_path, MAX_PATH_LEN, "extra/%s", MOHO_FILE_NAME);
+
+  int nlat_moho = N_LAT_MOHO;
+  int nlon_moho = N_LON_MOHO;
+  
+  double lon_moho[nlat_moho][nlon_moho];
+  double lat_moho[nlat_moho][nlon_moho];
+  double moho[nlat_moho][nlon_moho];
+
+  /* Read moho depth data and handle errors */
+  if (checkMohoDepthIO (readMohoDepth (nlat_moho, nlon_moho, moho_path,
+                                       lon_moho, lat_moho, moho)))
     
     exit (EXIT_FAILURE);
 
   /* Set path for model file */
-  char modelpath[MAX_PATH_LEN];
+  char model_path[MAX_PATH_LEN];
 
-  snprintf (modelpath, MAX_PATH_LEN, "%s", argv[2]);
+  snprintf (model_path, MAX_PATH_LEN, "%s", argv[2]);
 
   /* Read number of shells from model header */
   int ns = 0;
 
-  if (checkModelIO (readModelHeader (&ns, modelpath)))
+  if (checkModelIO (readModelHeader (&ns, model_path)))
   
     exit (EXIT_FAILURE);
 
@@ -444,7 +702,7 @@ int main (int argc, char *argv[])
   fprintf (stderr, "Reading input model...\n");
 
   /* Read model data and handle errors */
-  if (checkModelIO (readModel (ns, modelpath,
+  if (checkModelIO (readModel (ns, model_path,
                                rn, rhon, vpn, vsn)))
     
     exit (EXIT_FAILURE);
@@ -555,7 +813,41 @@ int main (int argc, char *argv[])
   {
     fprintf (stderr, "Incorporating surface topography with anti-aliasing filter...\n");
 
-    filterTopography (nlat, nlon, lon, lat, elev, nv, vtx[ref], ns, r, length);
+    filterTopography (nlat_topo, nlon_topo, lon_topo, lat_topo,
+                      topo, nv, vtx[ref], ns, r, length);
+  }
+
+  /* Find Moho index */
+  int index = 0;
+
+  for (int j = 1; j < ns; j++)
+
+    if (vpn[j - 1] < 7.0 && vpn[j] > 8.0)
+    {
+      index = j - 1; break;
+    }
+
+  /* Get Moho radius for the 1D Reference Earth model */
+  double moho_radius = r[0][index];
+
+  /* Set path for moho radius file */
+  char radius_path[MAX_PATH_LEN];
+
+  snprintf (radius_path, MAX_PATH_LEN, "input/1d_moho_radius.dat");
+
+  /* Write Moho radius (and associated index) for the 1D Reference Earth model
+     and handle errors */
+  if (checkMohoRadiusIO (writeMohoRadius (radius_path, index, moho_radius)))
+  
+    exit (EXIT_FAILURE);
+
+  /* Incorporate Moho topography (with anti-aliasing filter) if specified */
+  if (INCORPORATE_MOHO_TOPOGRAPHY)
+  {
+    fprintf (stderr, "Incorporating Moho topography with anti-aliasing filter...\n");
+
+    filterMoho (nlat_moho, nlon_moho, lon_moho, lat_moho,
+                moho, moho_radius, nv, vtx[ref], ns, r, length);
   }
 
   fprintf (stderr, "Writing out model binary files...\n");

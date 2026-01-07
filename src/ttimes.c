@@ -301,6 +301,18 @@ static void processPhases (char phases_path[MAX_PATH_LEN],
   double receiver_radius = EARTH_RADIUS + receiver_elevation * 1E-3;
   double receiver_correction = 0.0;
 
+  /* Set path for 1D Moho radius file */
+  char moho_radius_path[MAX_PATH_LEN];
+
+  snprintf (moho_radius_path, MAX_PATH_LEN, "input/1d_moho_radius.dat");
+
+  /* Read 1D Moho radius and handle errors */
+  int moho_index; double moho_radius;
+
+  if (checkMohoRadiusIO (readMohoRadius (moho_radius_path, &moho_index, &moho_radius)))
+
+    exit (EXIT_FAILURE);
+
   /* Process each phase in the list */
   for (int i = 0; i < np; i++)
   {
@@ -323,58 +335,138 @@ static void processPhases (char phases_path[MAX_PATH_LEN],
     
       exit (EXIT_FAILURE);
 
-    /* Adjust ray path for surface radius */
-    for (int j = 0; j < nd; j++)
-    {
-      struct Triplet p = iray[j];
-      
-      /* Calculate the current radius of the ray point */
-      double point_current_radius = norm (&p);
+    /* Adjust ray path for surface radius if required */
+    if (INCORPORATE_SURFACE_TOPOGRAPHY)
 
-      /* Skip points significantly deviating from Earth's surface radius */
-      if (fabs (point_current_radius - EARTH_RADIUS) > THRESHOLD) continue;
+      for (int j = 0; j < nd; j++)
+      {
+        struct Triplet p = iray[j];
+        
+        /* Calculate the current radius of the ray point */
+        double point_current_radius = norm (&p);
 
-      /* Normalize the point coordinates by Earth's radius */
-      p.x /= EARTH_RADIUS;
-      p.y /= EARTH_RADIUS;
-      p.z /= EARTH_RADIUS;
+        /* Skip points significantly deviating from Earth's surface radius */
+        if (fabs (point_current_radius - EARTH_RADIUS) > THRESHOLD) continue;
 
-      /* Determine the facet containing the current point */
-      int index = findFacet (refinement, p, fct, vtx);
+        /* Skip points below the maximum Moho radius */
+        if (point_current_radius < R_MOHO_MAX) continue;
 
-      /* Extract vertex indices of the containing facet */
-      int i1 = fct[ref][index].i1;
-      int i2 = fct[ref][index].i2;
-      int i3 = fct[ref][index].i3;
+        /* Normalize the point coordinates by Earth's radius */
+        p.x /= EARTH_RADIUS;
+        p.y /= EARTH_RADIUS;
+        p.z /= EARTH_RADIUS;
 
-      /* Retrieve radius values at the surface for each vertex */
-      double r_1 = r[i1][0];
-      double r_2 = r[i2][0];
-      double r_3 = r[i3][0];
+        /* Determine the facet containing the current point */
+        int index = findFacet (refinement, p, fct, vtx);
 
-      /* Get the 3D coordinates of the facet vertices */
-      struct Triplet p1 = vtx[ref][i1].p;
-      struct Triplet p2 = vtx[ref][i2].p;
-      struct Triplet p3 = vtx[ref][i3].p;
+        /* Extract vertex indices of the containing facet */
+        int i1 = fct[ref][index].i1;
+        int i2 = fct[ref][index].i2;
+        int i3 = fct[ref][index].i3;
 
-      /* Compute barycentric coordinates for the point within the facet */
-      double u, v, w; baricentric (&p, &p1, &p2, &p3, &u, &v, &w);
+        /* Retrieve radius values at the surface for each vertex */
+        double r_1 = r[i1][0];
+        double r_2 = r[i2][0];
+        double r_3 = r[i3][0];
 
-      /* Calculate the new radius based on barycentric interpolation */
-      double point_new_radius = u * r_1 + v * r_2 + w * r_3;
-      /* Compute scaling factor to adjust the radius */
-      double scaling_factor  = point_new_radius / point_current_radius;
+        /* Get the 3D coordinates of the facet vertices */
+        struct Triplet p1 = vtx[ref][i1].p;
+        struct Triplet p2 = vtx[ref][i2].p;
+        struct Triplet p3 = vtx[ref][i3].p;
 
-      /* Apply scaling factor to adjust the ray point coordinates */
-      iray[j].x *= scaling_factor;
-      iray[j].y *= scaling_factor;
-      iray[j].z *= scaling_factor;
+        /* Compute barycentric coordinates for the point within the facet */
+        double u, v, w; baricentric (&p, &p1, &p2, &p3, &u, &v, &w);
 
-      /* Update receiver correction for the last point */
-      if (j == nd - 1)
-      
-        receiver_correction = receiver_radius - point_new_radius;
-    }
+        /* Calculate the new radius based on barycentric interpolation */
+        double point_new_radius = u * r_1 + v * r_2 + w * r_3;
+        /* Compute ratio of new radius to current radius */
+        double ratio = point_new_radius / point_current_radius;
+
+        /* Compute correction intervals */
+        double rmin = R_MOHO_MAX;
+        double rref = EARTH_RADIUS;
+
+        /* Apply scaling factor to adjust the ray point coordinates */
+        double gamma = (point_current_radius - rmin) / (rref - rmin);
+        double scaling_factor = 1.0 + gamma * ratio;
+
+        iray[j].x *= scaling_factor;
+        iray[j].y *= scaling_factor;
+        iray[j].z *= scaling_factor;
+
+        /* Update receiver correction for the last point */
+        if (j == nd - 1)
+        
+          receiver_correction = receiver_radius - point_new_radius;
+      }
+
+    /* Adjust ray path for Moho topography if required */
+    if (INCORPORATE_MOHO_TOPOGRAPHY)
+
+      for (int j = 0; j < nd; j++)
+      {
+        struct Triplet p = iray[j];
+        
+        /* Calculate the current radius of the ray point */
+        double point_current_radius = norm (&p);
+
+        /* Skip points above R_MOHO_MAX or below R_MOHO_MIN */
+        if (point_current_radius > R_MOHO_MAX ||
+            point_current_radius < R_MOHO_MIN) continue;
+
+        /* Normalize the point coordinates by the current radius */
+        p.x /= point_current_radius;
+        p.y /= point_current_radius;
+        p.z /= point_current_radius;
+
+        /* Determine the facet containing the current point */
+        int index = findFacet (refinement, p, fct, vtx);
+
+        /* Extract vertex indices of the containing facet */
+        int i1 = fct[ref][index].i1;
+        int i2 = fct[ref][index].i2;
+        int i3 = fct[ref][index].i3;
+
+        /* Retrieve radius values at the Moho for each vertex */
+        double r_1 = r[i1][moho_index];
+        double r_2 = r[i2][moho_index];
+        double r_3 = r[i3][moho_index];
+
+        /* Get the 3D coordinates of the facet vertices */
+        struct Triplet p1 = vtx[ref][i1].p;
+        struct Triplet p2 = vtx[ref][i2].p;
+        struct Triplet p3 = vtx[ref][i3].p;
+
+        /* Compute barycentric coordinates for the point within the facet */
+        double u, v, w; baricentric (&p, &p1, &p2, &p3, &u, &v, &w);
+
+        /* Calculate the new moho radius based on barycentric interpolation */
+        double moho_new_radius = u * r_1 + v * r_2 + w * r_3;
+
+        /* Compute old and new Moho depths */
+        double moho_depth     = EARTH_RADIUS - moho_radius;
+        double moho_new_depth = EARTH_RADIUS - moho_new_radius;
+        
+        /* Compute ratio of Moho depth change to Moho radius */
+        double ratio = (moho_depth - moho_new_depth) / moho_radius;
+
+        /* Compute correction intervals */
+        double rmin = R_MOHO_MIN;
+        double rref = moho_radius;
+        double rmax = R_MOHO_MAX;
+
+        double r_point = point_current_radius;
+        /* Compute scaling factor to adjust the radius */
+        double gamma = (r_point > rref) ? (rmax - r_point) / (rmax - rref)
+                                        : (r_point - rmin) / (rref - rmin);
+
+        double scaling_factor = 1.0 + gamma * ratio;
+
+        /* Apply scaling factor to adjust the ray point coordinates */
+        iray[j].x *= scaling_factor;
+        iray[j].y *= scaling_factor;
+        iray[j].z *= scaling_factor;
+      }
 
     int nnd = resampledSize (nd, iray, DELTA);
 

@@ -38,6 +38,13 @@ int readTopography (int nlat, int nlon,
                     double elev[nlat][nlon]);
 int readReceiverElevation (double *elevation,
                            char receiver[MAX_STRING_LEN]);
+int readMohoRadius (char filename[MAX_STRING_LEN],
+                    int *index, double *moho_radius);
+int readMohoDepth (int nlat, int nlon,
+                   char filename[MAX_STRING_LEN],
+                   double lon[nlat][nlon],
+                   double lat[nlat][nlon],
+                   double depth[nlat][nlon]);
 int readPhaseHeader (char *filename, int *np);
 int readPhases (char *filename,
                 int np,
@@ -57,6 +64,8 @@ int readModelFiles (int nv, int ns,
                     double vp[nv][ns],
                     double vs[nv][ns]);
 
+int writeMohoRadius (char filename[MAX_STRING_LEN],
+                     int index, double moho_radius);
 int writeMeshFiles (int ref,
                     struct Facet **fct,
                     struct Vertex **vtx);
@@ -87,6 +96,8 @@ int writeGravity (double height,
 int checkModelIO (int rvalue);
 int checkTopographyIO (int rvalue);
 int checkReceiverIO (int rvalue);
+int checkMohoRadiusIO (int rvalue);
+int checkMohoDepthIO (int rvalue);
 int checkMeshIO (int rvalue);
 int checkMeshModelIO (int rvalue);
 int checkMeshVTK_IO (int rvalue);

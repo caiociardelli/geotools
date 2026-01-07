@@ -67,15 +67,17 @@ label="@[g \left[mGal\right]@["
 filename="$1".dat
 grdname="$1".grd
 output="$1"
+filename_temp="temp.dat"
+grdname_temp="temp.grd"
 
 echo 'Creating figure...'
 
 # Convert XYZ data to grid, trim region to avoid poles (-89/89), 
 # convert back to XYZ, and interpolate using GMT surface
-gmt xyz2grd $filename -R-180/180/-90/90 -I1.0 -G"$filename.grd" -:
-gmt grdcut $filename.grd -G"$filename.grd" -R-180/180/-89/89
-gmt grd2xyz $filename.grd > $filename.txt
-gmt surface $filename.txt -R-180/180/-89/89 -I0.25 -G$grdname
+gmt xyz2grd $filename -R-180/180/-90/90 -I1.0 -G"$grdname_temp" -:
+gmt grdcut $grdname_temp -G"$grdname_temp" -R-180/180/-89/89
+gmt grd2xyz $grdname_temp > $filename_temp
+gmt surface $filename_temp -R-180/180/-89/89 -I0.25 -G$grdname
 
 # Extract min/max and adjust grid
 min=$(gmt grdinfo $grdname | grep 'v_min' | cut -f3 -d' ')

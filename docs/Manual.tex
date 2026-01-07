@@ -12,9 +12,7 @@
 \usepackage{dirtree}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
-
 \geometry{margin=1in}
-
 \lstset{
   backgroundcolor=\color{white},
   basicstyle=\footnotesize\ttfamily,
@@ -39,35 +37,24 @@
   tabsize=2,
   title=\lstname
 }
-
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{GeoTools Package Manual}
 \lhead{Caio Ciardelli}
 \rfoot{Page \thepage\ of \pageref{LastPage}}
-
 \title{GeoTools Package Manual}
 \author{Caio Ciardelli \\ Northwestern University \\ Under the supervision of Prof. Suzan van der Lee}
-\date{October 2025}
-
+\date{January 2026}
 \begin{document}
-
 \maketitle
-
 \tableofcontents
-
 \newpage
-
 \section{Introduction}
-
-The GeoTools Package is a geosciences software package developed for computing seismic ray paths, travel times, and synthetic gravity disturbances in 3D Earth models, including surface topography. It is written in C, Python, and Bash, and is designed for high-performance computations using parallel processing (via OpenMPI). The package is currently under development and focuses on forward modeling capabilities. Future versions will include inversion features for 3D velocity and density distributions, Moho topography, 3D ray tracing, and Earth's ellipticity.
-
+The GeoTools Package is a geosciences software package developed for computing seismic ray paths, travel times, and synthetic gravity disturbances in 3D Earth models, including surface topography. It is written in C, Python, and Bash, and is designed for high-performance computations using parallel processing (via OpenMPI). The package is currently under development and focuses on forward modeling capabilities. The package now includes the capability to incorporate Moho topography into the mesh, affecting both gravity calculations and travel time computations. For travel times, Moho topography is accounted for by locally deforming the ray path, which serves as an approximation until full 3D ray tracing is implemented. Future versions will include inversion features for 3D velocity and density distributions, 3D ray tracing, and Earth's ellipticity.
 This manual provides a comprehensive guide to installing, compiling, running, and understanding the package. It includes details on the directory structure, dependencies, key scripts and programs, input/output files, and usage examples.
-
 The program is licensed under the GNU General Public License (GPL) version 3 or later. See the LICENSE file for details.
 
 \section{Dependencies}
-
 The GeoTools Package requires the following software and libraries:
 
 \begin{itemize}
@@ -96,10 +83,9 @@ Ensure all dependencies are installed on your system. For Python libraries, use 
 pip install numpy matplotlib paraview
 \end{lstlisting}
 
-Note: SeisTracer requires additional installation steps; refer to its documentation. The package assumes access to ETOPO topography data in extra/earth\_relief\_15m.topo for surface topography incorporation.
+Note: SeisTracer requires additional installation steps; refer to its documentation. The package assumes access to ETOPO topography data in extra/earth\_relief\_15m.topo for surface topography incorporation and CRUST1.0 Moho data in extra/crust1\_moho.dat for Moho topography incorporation.
 
 \section{Directory Structure}
-
 The package is organized as follows:
 
 \dirtree{%
@@ -109,6 +95,7 @@ The package is organized as follows:
 .3 Manual.tex.
 .2 extra.
 .3 CET-D01A.cpt.
+.3 crust1\_moho.dat.
 .3 earth\_relief\_15m.topo.
 .2 input.
 .3 receivers.dat.
@@ -159,8 +146,9 @@ The package is organized as follows:
 }
 
 Key directories:
+
 \begin{itemize}
-    \item \textbf{extra}: Contains topography data (ETOPO: earth\_relief\_15m.topo) and color palettes (CET-D01A.cpt) for GMT plotting.
+    \item \textbf{extra}: Contains topography data (ETOPO: earth\_relief\_15m.topo), Moho data (CRUST1.0: crust1\_moho.dat), and color palettes (CET-D01A.cpt) for GMT plotting.
     \item \textbf{input}: Input files for receivers (receivers.dat: station ID, lat, lon, elevation) and sources (sources.dat: event ID, lat, lon, depth) used in ray tracing.
     \item \textbf{mesh}: Output directory for mesh-related binary files (e.g., facets.bin, vertices.bin, r.bin, rho.bin, vp.bin, vs.bin) and VTK files (Mesh\_VpVsRho.vtk).
     \item \textbf{models}: Predefined 1D Earth models (e.g., iasp91.model, prem.model) in text format for resampling and meshing.
@@ -170,7 +158,6 @@ Key directories:
 \end{itemize}
 
 \section{Compilation}
-
 The package uses a Makefile in the root directory for compilation. To build the C binaries (mesher, gravity, ttimes):
 
 \begin{lstlisting}[language=Bash]
@@ -178,17 +165,14 @@ make all
 \end{lstlisting}
 
 This compiles the source files in src/ (using headers from src/headers and shared code from src/shared) and places the executables in a new bin/ directory. The compilation requires GCC and OpenMPI for parallel support in gravity.
-
 To clean previous build artifacts:
 
 \begin{lstlisting}[language=Bash]
 make clean
 \end{lstlisting}
-
 Note: Ensure GCC and OpenMPI are in your PATH. The Makefile assumes standard includes; modify it if needed for custom library paths. After compilation, grant execution permissions to utility scripts if necessary (e.g., chmod +x utils/*.bash).
 
 \section{Running the Program}
-
 The main entry point is the test workflow script: run\_test\_workflow.bash. It automates the entire forward modeling process: model resampling, ray path computation, mesh generation, travel time calculation, gravity computation, and visualizations. The script uses a fixed refinement level (7), model (IASP91), and parameters (e.g., NCORES=6, DELTA=5.0, HEIGHT=255 km), but these can be customized by editing the script.
 
 Usage:
@@ -198,6 +182,7 @@ Usage:
 \end{lstlisting}
 
 Steps performed by the script:
+
 \begin{itemize}
     \item Cleans previous outputs (removes phases directories, .txt, .dat, .png, .vtk, .pvsm, gmt.history).
     \item Resamples the 1D IASP91 model to input/input.model using resample\_1d\_model.py.
@@ -219,11 +204,8 @@ For help:
 Individual components can be run manually (see Section 6). Outputs are placed in the current directory or subdirectories like mesh/ and phases\_EQ001\_STA01/.
 
 \section{Key Components and Usage}
-
 \subsection{resample\_1d\_model.py (utils/resample\_1d\_model.py)}
-
 This Python script resamples a 1D Earth model in two stages: linear collapse (removes points in constant-gradient intervals) and importance-based pruning (removes least important points until target ratio). It preserves header lines and outputs stats, errors, and an optional comparison plot.
-
 Usage:
 
 \begin{lstlisting}[language=Bash]
@@ -231,6 +213,7 @@ python utils/resample_1d_model.py -i INPUT -o OUTPUT [options]
 \end{lstlisting}
 
 Key options (from argparse):
+
 \begin{itemize}
     \item -i, --input: Input model file (required, e.g., models/iasp91.model).
     \item -o, --output: Output resampled model file (required).
@@ -250,15 +233,17 @@ Key options (from argparse):
 \end{itemize}
 
 Input: Text file with header (4 lines) and data columns (e.g., depth, Vp, Vs, rho).
-
 Output: Resampled model file, console stats (reduction \%, max errors), optional PNG plot.
-
 Example (from workflow): python utils/resample\_1d\_model.py -i models/iasp91.model -o input/input.model
 
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figs/1d_model_resampling.png}
+  \caption{Comparison between the original and resampled 1D reference Earth model.}
+\end{figure}
+
 \subsection{compute\_rays.py (utils/compute\_rays.py)}
-
 This Python script computes seismic ray paths for source-receiver pairs using SeisTracer. It generates directories with VTK/text files for rays, phase lists, and optional PNG plots. Supports multiple phases and saves receiver elevation.
-
 Usage:
 
 \begin{lstlisting}[language=Bash]
@@ -266,6 +251,7 @@ python utils/compute_rays.py -r RECEIVERS -s SOURCES [options]
 \end{lstlisting}
 
 Key options:
+
 \begin{itemize}
     \item -r: Receivers file (required, e.g., input/receivers.dat: ID lat lon elev).
     \item -s: Sources file (required, e.g., input/sources.dat: ID lat lon depth).
@@ -274,8 +260,8 @@ Key options:
 \end{itemize}
 
 Input: receivers.dat and sources.dat (text files with locations).
-
 Output: Directory per pair (e.g., phases\_EQ001\_STA01/) with:
+
 \begin{itemize}
     \item PHASE.vtk / PHASE.txt: Ray coordinates and branches.
     \item sr.vtk: Source/receiver points.
@@ -285,12 +271,23 @@ Output: Directory per pair (e.g., phases\_EQ001\_STA01/) with:
 \end{itemize}
 
 Example (from workflow): python utils/compute\_rays.py -r input/receivers.dat -s input/sources.dat
-
 Notes: Uses Vincenty's formula for great-circle distances; maps branch types (P=0, S=1).
 
-\subsection{mesher.c (bin/mesher)}
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figs/PcPPKSSm+S.png}
+  \caption{Example of a single seismic ray path computed for a complex phase.}
+\end{figure}
 
-This C program creates a spherical mesh based on a 1D velocity model, optionally incorporating ETOPO topography (with Gaussian anti-aliasing filter) and 3D perturbations. Starts from an icosahedron and refines it.
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figs/ray_paths_EQ001_STA01.png}
+  \caption{Multiple seismic ray paths for various phases between a source and receiver pair.}
+\end{figure}
+
+\subsection{mesher.c (bin/mesher)}
+This C program creates a spherical mesh based on a 1D velocity model, optionally incorporating ETOPO topography (with Gaussian anti-aliasing filter), CRUST1.0 Moho topography (similarly filtered), and 3D perturbations. Starts from an icosahedron and refines it. The Moho topography is incorporated by adjusting the radii at the Moho discontinuity level, using a similar anti-aliasing filter as for surface topography. By default, it uses the Moho depths from the CRUST1.0 model in extra/crust1\_moho.dat, but users can specify a different file by changing the variable 
+\lstinline{MOHO_FILE_NAME} in constants.h.
 
 Usage:
 
@@ -304,6 +301,7 @@ Usage:
 \end{itemize}
 
 Output (in mesh/ and current dir):
+
 \begin{itemize}
     \item Binary: facets.bin (facet data), vertices.bin (vertex data), r.bin/rho.bin/vp.bin/vs.bin (model values per vertex/shell).
     \item Text: nodes.txt (lon/lat of vertices), spiral.txt (spiral-ordered vertices), mesh\_edges\_\%d.txt, mesh\_triangles\_\%d.txt, mesh\_center\_triangle\_\%d.txt (for DEBUG\_MESH=true).
@@ -311,19 +309,31 @@ Output (in mesh/ and current dir):
 \end{itemize}
 
 Configurable in constants.h:
+
 \begin{itemize}
     \item INCORPORATE\_SURFACE\_TOPOGRAPHY: true (uses extra/earth\_relief\_15m.topo).
+    \item INCORPORATE\_MOHO\_TOPOGRAPHY: true (uses extra/crust1\_moho.dat).
     \item INCORPORATE\_3D\_MODEL: false (placeholder for 3D perturbations).
     \item DEBUG\_MESH: true (outputs text files for plotting).
 \end{itemize}
 
 Example (from workflow): ./bin/mesher 7 input/input.model
-
 Notes: Prints mesh stats (facets, vertices, edge lengths). Requires ~ number of shells from model.
 
-\subsection{ttimes.c (bin/ttimes)}
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figs/mesh320.png}
+  \caption{Global map showing a highlighted triangle in the spherical mesh.}
+\end{figure}
 
-This C program computes seismic travel times for phases using the mesh and model, accounting for topography via receiver elevation.
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=1.0\textwidth]{figs/Mesh_Visualization.png}
+  \caption{3D visualization of the mesh colored by P-wave velocity (Vp).}
+\end{figure}
+
+\subsection{ttimes.c (bin/ttimes)}
+This C program computes seismic travel times for phases using the mesh and model, accounting for topography via receiver elevation. When Moho topography is incorporated (via INCORPORATE\_MOHO\_TOPOGRAPHY in constants.h), it is accounted for by locally deforming the ray path near the Moho discontinuity. This deformation adjusts the ray to follow the varying Moho depth, providing an approximation to the true 3D path perturbation caused by the Moho topography. This is an interim solution; the ideal approach of full 3D ray tracing will replace this approximation in future versions.
 
 Usage:
 
@@ -336,15 +346,11 @@ Usage:
 \end{itemize}
 
 Output: To stdout: Phase names and travel times (seconds).
-
 Example (from workflow): ./bin/ttimes phases\_EQ001\_STA01/ > ttimes.txt
-
 Notes: Reads mesh/model binaries; resamples rays with DELTA=0.1 km; uses barycentric coordinates for element location.
 
 \subsection{gravity.c (bin/gravity)}
-
-This C program computes Earth's gravitational field in parallel using MPI, accounting for topography and height.
-
+This C program computes Earth's gravitational field in parallel using MPI, accounting for topography and height. When Moho topography is incorporated into the mesh (via INCORPORATE\_MOHO\_TOPOGRAPHY in constants.h), it affects the gravity calculations by altering the density distribution at the Moho level in the 3D model.
 Usage:
 
 \begin{lstlisting}[language=Bash]
@@ -357,13 +363,10 @@ mpiexec -n NCORES ./bin/gravity DH HEIGHT
 \end{itemize}
 
 Output: G\_x.dat, G\_y.dat, G\_z.dat (gravity components), G\_normal.dat (normal component, in g [m/s²]).
-
 Notes: Reads mesh/model binaries; decomposes elements into tetrahedra; computes mass (prints Earth's mass). Parallel over facets.
-
 Example (from workflow): mpiexec -n 6 ./bin/gravity 5.0 255
 
 \subsection{plot\_mesh.bash (utils/plot\_mesh.bash)}
-
 This Bash script generates GMT plots of mesh triangles, centers, and edges from text files.
 
 Usage:
@@ -373,19 +376,16 @@ Usage:
 \end{lstlisting}
 
 Input: Auto-detects mesh\_*.txt files in current directory.
-
 Output: PNGs like mesh\%d.png (triangles in yellow, centers in red, edges in gray if <=20480), nodes\_spiral.png (if max=320: edges, spiral in magenta, nodes in green).
-
 Example (from workflow): ./utils/plot\_mesh.bash
 
 \subsection{plot\_gravity.bash (utils/plot\_gravity.bash)}
-
 This Bash script generates a GMT plot of gravity data (e.g., normal component).
 
 Usage:
 
 \begin{lstlisting}[language=Bash]
-./utils/plot\_gravity.bash FILENAME
+./utils/plot_gravity.bash FILENAME
 \end{lstlisting}
 
 \begin{itemize}
@@ -393,17 +393,18 @@ Usage:
 \end{itemize}
 
 Input: FILENAME.dat (lon lat gravity).
-
 Output: FILENAME.png (global map with colorbar in mGal, using extra/CET-D01A.cpt).
-
 Example (from workflow): ./utils/plot\_gravity.bash G\_normal
-
 Notes: Grids data with xyz2grd/surface; rescales to mGal; avoids poles.
 
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figs/G_normal.png}
+  \caption{Synthetic gravity map incorporating ETOPO topography (Moho topography was set to `false' in this example).}
+\end{figure}
+
 \subsection{pvsm\_generator.py (utils/pvsm\_generator.py)}
-
 This Python script generates ParaView .pvsm state files for VTK mesh/ray visualization.
-
 Usage:
 
 \begin{lstlisting}[language=Bash]
@@ -411,6 +412,7 @@ python utils/pvsm_generator.py MESH_VTK [options]
 \end{lstlisting}
 
 Key options:
+
 \begin{itemize}
     \item --color-by: Scalar to color by (e.g., Vp).
     \item --phases-dir: Directory with ray VTKs.
@@ -422,13 +424,10 @@ Key options:
 \end{itemize}
 
 Output: MESH\_VTK.pvsm (ParaView state file).
-
 Example (from workflow): python utils/pvsm\_generator.py mesh/Mesh\_VpVsRho.vtk --color-by Vp --phases-dir phases\_EQ001\_STA01 --phases PKIIKP PKPPm+PPcS ScSScSm-ScS SPS660-S --reverse-colormap --camera-view 210,10,0,0,20 --label 'Vp [km/s]' --light-intensity 0.5 --light-azimuth 140 --light-elevation 35
-
 Notes: Requires pvpython or ParaView Python env; adds rays as tubes, sources/receivers as spheres.
 
 \section{Examples}
-
 Run the full test workflow:
 
 \begin{lstlisting}[language=Bash]
@@ -436,25 +435,17 @@ Run the full test workflow:
 \end{lstlisting}
 
 This uses sample input/sources.dat (one event) and input/receivers.dat (one station), processes IASP91, and generates all outputs.
-
 Customize rays: Edit input/sources.dat and receivers.dat for multiple events/stations.
-
 View in ParaView: Load Mesh\_VpVsRho.pvsm for interactive 3D mesh/rays.
-
 Run mesher standalone: ./bin/mesher 8 models/prem.model
-
 Plot custom gravity: ./utils/plot\_gravity.bash my\_gravity
 
 \section{Future Features}
-
 \begin{itemize}
     \item 3D ray tracing in ttimes.
-    \item Moho discontinuity modeling in mesher.
     \item Earth's ellipticity corrections.
     \item Inversion capabilities for 3D velocity/density and Moho topography.
-    \item Enhanced 3D model incorporation in mesher (currently placeholder).
 \end{itemize}
 
 For contributions or issues, contact the author.
-
 \end{document}

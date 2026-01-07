@@ -122,6 +122,54 @@ int readReceiverElevation (double *elevation,
   return 0;
 }
 
+int readMohoRadius (char filename[MAX_STRING_LEN],
+                    int *index, double *moho_radius)
+{
+  /* Reads moho radius for a 1D Reference Earth model. */
+  FILE *file = fopen(filename, "r");
+
+  if (file == NULL) return 1;
+
+  /* Skip the first line of the file */
+  if (fscanf (file, "%*[^\n]\n") != 0) return 2;
+  if (fscanf (file, "%d %lf", index, moho_radius) != 2) return 2;
+
+  fclose(file);
+
+  return 0;
+}
+
+int readMohoDepth (int nlat, int nlon,
+                   char filename[MAX_STRING_LEN],
+                   double lon[nlat][nlon],
+                   double lat[nlat][nlon],
+                   double depth[nlat][nlon])
+{
+  /* Reads 3D moho depths. */
+  FILE *file = fopen(filename, "r");
+
+  if (file == NULL) return 1;
+
+  double lon_val, lat_val, depth_val;
+
+  for (int i = 0; i < nlat; i++)
+  {
+    for (int j = 0; j < nlon; j++)
+    {
+      if (fscanf (file, "%lf %lf %lf",
+                  &lat_val, &lon_val, &depth_val) != 3) return 2;
+
+      lon[i][j]   = lon_val;
+      lat[i][j]   = lat_val;
+      depth[i][j] = depth_val;
+    }
+  }
+
+  fclose(file);
+
+  return 0;
+}
+
 int readPhaseHeader (char *filename, int *np)
 {
   /* Reads the header of a phase list file to get the number of phases. */
@@ -436,6 +484,22 @@ int readModelFiles (int nv, int ns,
   
   /* Close S-wave velocity file */
   fclose (vs_file);
+
+  return 0;
+}
+
+int writeMohoRadius (char filename[MAX_STRING_LEN],
+                     int index, double moho_radius)
+{
+  /* Writes moho radius for a 1D Reference Earth model. */
+  FILE *file = fopen(filename, "w");
+
+  if (file == NULL) return 1;
+
+  fprintf (file, "# Index   Radius [km]\n");
+  fprintf (file, "%5d %13.3lf\n", index, moho_radius);
+
+  fclose(file);
 
   return 0;
 }
@@ -1068,6 +1132,40 @@ int checkReceiverIO (int rvalue)
 
     case 2:
       fprintf (stderr, "Error: could not read receiver elevation file!\n");
+    break;
+  }
+
+  return rvalue;
+}
+
+int checkMohoRadiusIO (int rvalue)
+{
+  /* Prints error messages for the I/O operations and returns the error code. */
+  switch (rvalue)
+  {
+    case 1:
+      fprintf (stderr, "Error: could not open 1D Moho radius file!\n");
+    break;
+
+    case 2:
+      fprintf (stderr, "Error: could not read 1D Moho radius file!\n");
+    break;
+  }
+
+  return rvalue;
+}
+
+int checkMohoDepthIO (int rvalue)
+{
+  /* Prints error messages for the I/O operations and returns the error code. */
+  switch (rvalue)
+  {
+    case 1:
+      fprintf (stderr, "Error: could not open Moho depth file!\n");
+    break;
+
+    case 2:
+      fprintf (stderr, "Error: could not read Moho depth file!\n");
     break;
   }
 

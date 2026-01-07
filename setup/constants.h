@@ -39,13 +39,20 @@ static const int N_MAX_NGB_TRIAG    = N_MAX_NGB_TRIAG_MACRO;    /* Maximum numbe
 static const int N_MAX_NGB_VERTICES = N_MAX_NGB_VERTICES_MACRO; /* Maximum number of neighboring vertices */
 static const int N_LAT_ETOPO        = 721;                      /* Number of latitude points in ETOPO data */
 static const int N_LON_ETOPO        = 1441;                     /* Number of longitude points in ETOPO data */
+static const int N_LAT_MOHO         = 361;                      /* Number of latitude points in CRUST1.0 Moho data */
+static const int N_LON_MOHO         = 721;                      /* Number of longitude points in CRUST1.0 Moho data */
 static const int N_TETRAHEDRA       = 32;                       /* Number of tetrahedra in the mesh */
 
 static const bool INCORPORATE_SURFACE_TOPOGRAPHY = true;        /* Flag to incorporate surface topography */
+static const bool INCORPORATE_MOHO_TOPOGRAPHY    = false;       /* Flag to incorporate Moho topography */
 static const bool INCORPORATE_3D_MODEL           = false;       /* Flag to incorporate 3D velocity and density model */
 static const bool DEBUG_MESH                     = true;        /* Flag to print edges and facets for plotting */
 
+static const char MOHO_FILE_NAME[] = "crust1_moho.dat";         /* File name for Moho topography */
+
 static const double EARTH_RADIUS    = 6371.0;                   /* Earth's radius in kilometers */
+static const double R_MOHO_MIN      = EARTH_RADIUS - 200.0;     /* Minimum radius for Moho correction */
+static const double R_MOHO_MAX      = EARTH_RADIUS -   9.0;     /* Maximum radius for Moho correction */
 static const double PI              = 3.14159265358979323846;   /* Pi approximation */
 static const double TO_RADIAN       = PI / 180.0;               /* Constant to convert from degrees to radians */
 static const double TO_DEGREE       = 180.0 / PI;               /* Constant to convert from radians to degrees */

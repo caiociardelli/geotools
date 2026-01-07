@@ -85,6 +85,8 @@ fi
 echo "Bulding Joint Inversion Program..."
 
 # Remove previous output files and directories to ensure a clean build
+rm -fv input/1d_moho_radius.dat input/input.model
+rm -fv mesh/*
 rm -rfv phases_EQ001_STA01/ *.txt *.dat *.png *.vtk *.pvsm *.grd gmt.history d01a_rescaled
 
 # Clean previous build artifacts
@@ -117,7 +119,7 @@ echo "Running mesher..."
 # Create GMT plots to visualize mesh triangles, centers, and edges
 echo ""
 echo "Plotting mesh..."
-./utils/plot_mesh.bash 
+./utils/plot_mesh.bash
 
 # Generate a ParaView state file for 3D visualization of mesh and ray paths
 echo ""

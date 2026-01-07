@@ -331,12 +331,23 @@ def plot_comparison(data_vals, keep_mask, depth_col, check_cols, out_png, max_co
     y, y_k = arr[:, col], arr[kept, col]
     ax.plot(y, z, lw=1.3, label="original")
     ax.plot(y_k, z_k, lw=2.0, label="resampled")
-    ax.set_xlabel(f'Column {col}')
-    ax.set_ylabel(f'Depth (col {depth_col})')
+    ax.set_ylim(0, 6371)
+    if col == 1:
+      ax.set_xlabel(r'$\rho$ [g/cm$^3$]', fontsize=20)
+    elif col == 2:
+      ax.set_xlabel(r'$\alpha$ [km/s]', fontsize=20)
+    else:
+      ax.set_xlabel(r'$\beta$ [km/s]', fontsize=20)
+    ax.tick_params(axis='both', labelsize=20)
     ax.invert_yaxis()
     ax.grid(True, ls=':', alpha=0.5)
-    ax.set_title(f'Column {col}')
-    ax.legend()
+    if col == 1:
+      ax.set_ylabel('Depth [km]', fontsize=20)
+      ax.legend(fontsize=20)
+    else:
+      ax.set_yticklabels([])
+
+  plt.suptitle(f'1D Reference Earth Model', fontsize=24)
 
   for j in range(ip + 1, len(axes)):
     fig.delaxes(axes[j])
