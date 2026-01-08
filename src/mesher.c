@@ -333,7 +333,7 @@ static void filterTopography (int nlat, int nlon,
     double ratio = elevation / (EARTH_RADIUS * 1E3);
 
     /* Compute correction intervals */
-    double rmin = R_MOHO_MAX;
+    double rmin = R_SURFACE_MIN;
     double rref = EARTH_RADIUS;
 
     /* Apply correction */
@@ -348,6 +348,7 @@ static void filterTopography (int nlat, int nlon,
       r[i][k] *= scaling_factor;
 
       if (r[i][k] < rmin) r[i][k] = rmin;
+      if (k > 0 && r[i][k] > r[i][k - 1]) r[i][k] = r[i][k - 1];
     }
   }
 }
@@ -572,6 +573,7 @@ static void filterMoho (int nlat, int nlon,
       r[i][k] *= scaling_factor;
 
       if (r[i][k] > rmax) r[i][k] = rmax;
+      if (k > 0 && r[i][k] > r[i][k - 1]) r[i][k] = r[i][k - 1];
     }
   }
 }

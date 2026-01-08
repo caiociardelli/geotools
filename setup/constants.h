@@ -51,8 +51,9 @@ static const bool DEBUG_MESH                     = true;        /* Flag to print
 static const char MOHO_FILE_NAME[] = "crust1_moho.dat";         /* File name for Moho topography */
 
 static const double EARTH_RADIUS    = 6371.0;                   /* Earth's radius in kilometers */
+static const double R_SURFACE_MIN   = EARTH_RADIUS -  11.0;     /* Minimum radius for surface correction */
 static const double R_MOHO_MIN      = EARTH_RADIUS - 200.0;     /* Minimum radius for Moho correction */
-static const double R_MOHO_MAX      = EARTH_RADIUS -   9.0;     /* Maximum radius for Moho correction */
+static const double R_MOHO_MAX      = EARTH_RADIUS -   7.0;     /* Maximum radius for Moho correction */
 static const double PI              = 3.14159265358979323846;   /* Pi approximation */
 static const double TO_RADIAN       = PI / 180.0;               /* Constant to convert from degrees to radians */
 static const double TO_DEGREE       = 180.0 / PI;               /* Constant to convert from radians to degrees */
