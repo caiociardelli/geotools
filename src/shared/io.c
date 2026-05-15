@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <locale.h>
 #include "constants.h"
 #include "structs.h"
 #include "coordinates.h"
@@ -51,6 +52,9 @@ int readModel (int ns,
   FILE *file = fopen (model, "r");
 
   if (file == NULL) return 1;
+
+  /* Force C locale so that '.' is used as decimal separator */
+  setlocale(LC_NUMERIC, "C");
 
   /* Skip the first three lines of the file */
   if (fscanf (file, "%*[^\n]\n") != 0) return 2;
@@ -87,6 +91,9 @@ int readTopography (int nlat, int nlon,
 
   if (file == NULL) return 1;
 
+  /* Force C locale so that '.' is used as decimal separator */
+  setlocale(LC_NUMERIC, "C");
+
   double lon_val, lat_val, elev_val;
 
   for (int i = 0; i < nlat; i++)
@@ -115,6 +122,9 @@ int readReceiverElevation (double *elevation,
 
   if (file == NULL) return 1;
 
+  /* Force C locale so that '.' is used as decimal separator */
+  setlocale(LC_NUMERIC, "C");
+
   if (fscanf (file, "#ELEVATION %lf m\n", elevation) != 1) return 2;
 
   fclose (file);
@@ -129,6 +139,9 @@ int readMohoRadius (char filename[MAX_STRING_LEN],
   FILE *file = fopen(filename, "r");
 
   if (file == NULL) return 1;
+
+  /* Force C locale so that '.' is used as decimal separator */
+  setlocale(LC_NUMERIC, "C");
 
   /* Skip the first line of the file */
   if (fscanf (file, "%*[^\n]\n") != 0) return 2;
@@ -149,6 +162,9 @@ int readMohoDepth (int nlat, int nlon,
   FILE *file = fopen(filename, "r");
 
   if (file == NULL) return 1;
+
+  /* Force C locale so that '.' is used as decimal separator */
+  setlocale(LC_NUMERIC, "C");
 
   double lon_val, lat_val, depth_val;
 
@@ -244,6 +260,9 @@ int readRay (char *filename,
   FILE *file = fopen (filename, "r");
 
   if (file == NULL) return 1;
+
+  /* Force C locale so that '.' is used as decimal separator */
+  setlocale(LC_NUMERIC, "C");
 
   if (fscanf (file, "%*[^\n]\n") != 0)
   {

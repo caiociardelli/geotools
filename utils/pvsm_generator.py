@@ -44,9 +44,8 @@ from pathlib import Path
 try:
   # Import ParaView Python modules
   import paraview
-  paraview.compatibility.major = 5
-  paraview.compatibility.minor = 11
-  
+  paraview.compatibility.major = 6
+  paraview.compatibility.minor = 1
   # Initialize ParaView
   from paraview.simple import *
   
@@ -363,12 +362,6 @@ class ParaViewVTKVisualizer:
   def add_light_source(self, intensity=1.0, azimuth=0.0, elevation=45.0, render_view=None):
     """
     Add an additional light source to the visualization.
-    
-    Args:
-        intensity (float): Light intensity (0.0 to 2.0, default: 1.0)
-        azimuth (float): Light azimuth angle in degrees (0-360)
-        elevation (float): Light elevation angle in degrees (-90 to 90)
-        render_view: Render view to add light to (uses self.render_view if None)
     """
     if render_view is None:
       render_view = self.render_view
@@ -376,13 +369,15 @@ class ParaViewVTKVisualizer:
     if render_view is None:
       raise RuntimeError("No render view available. Create a visualization first.")
     
-    # Create a new light source using AddLight to automatically attach to view
+    # Create a new light source
     light = AddLight(render_view)
     if not light:
-      raise RuntimeError("Failed to create and add light to render view.")
-    # Set intensity (clamp between 0.0 and 2.0)
+      raise RuntimeError("Failed to create light source.")
+    
+    # Set intensity
     light.Intensity = max(min(intensity, 2.0), 0.0)
-    # Use Position and FocalPoint to define direction without visible icon
+    
+    # Calculate light position using mesh bounds (if available)
     if self.reader:
       bounds = self.reader.GetDataInformation().GetBounds()
       center_x = (bounds[0] + bounds[1]) / 2.0
@@ -391,30 +386,22 @@ class ParaViewVTKVisualizer:
       max_extent = max(bounds[1]-bounds[0], bounds[3]-bounds[2], bounds[5]-bounds[4])
       distance = max_extent * 2.0
     else:
-      center_x, center_y, center_z = 0.0, 0.0, 0.0
+      center_x = center_y = center_z = 0.0
       distance = 1000.0
     
-    # Convert angles to radians
     azimuth_rad = math.radians(azimuth)
     elevation_rad = math.radians(elevation)
     
-    # Calculate light position
     light_x = center_x + distance * math.cos(elevation_rad) * math.sin(azimuth_rad)
     light_y = center_y + distance * math.cos(elevation_rad) * math.cos(azimuth_rad)
     light_z = center_z + distance * math.sin(elevation_rad)
-    # Set light position and focal point
+    
     light.Position = [light_x, light_y, light_z]
     light.FocalPoint = [center_x, center_y, center_z]
-    
-    # Explicitly set the coordinate system to 'Scene'
     light.Coords = 'Scene'
-    # Sisable the light widget
-    Hide3DWidgets(proxy=light)
-    # Ensure lighting is enabled
+    
     render_view.UseLight = 1
-    # Disable orientation axes visibility
     render_view.OrientationAxesVisibility = 0
-    # Update the render view
     render_view.StillRender()
     
     print(f"Added light source: intensity={intensity}, azimuth={azimuth}°, elevation={elevation}°")
@@ -1373,6 +1360,13 @@ def create_mesh_and_rays_visualization(vtk_file_path, ray_phases, output_pvsm_pa
   if add_source_receiver and result.get('sr_objects'):
     print(f" Source/receiver points added from: {sr_file_path}")
   
+  # Prevent Segmentation fault when exiting pvpython 6.1
+  try:
+    Disconnect()
+    ResetSession()
+  except:
+    pass
+
   return result
 
 def create_pvsm_file(vtk_file_path, output_pvsm_path,

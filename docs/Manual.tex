@@ -408,7 +408,7 @@ This Python script generates ParaView .pvsm state files for VTK mesh/ray visuali
 Usage:
 
 \begin{lstlisting}[language=Bash]
-python utils/pvsm_generator.py MESH_VTK [options]
+pvpython utils/pvsm_generator.py MESH_VTK [options]
 \end{lstlisting}
 
 Key options:
@@ -424,7 +424,7 @@ Key options:
 \end{itemize}
 
 Output: MESH\_VTK.pvsm (ParaView state file).
-Example (from workflow): python utils/pvsm\_generator.py mesh/Mesh\_VpVsRho.vtk --color-by Vp --phases-dir phases\_EQ001\_STA01 --phases PKIIKP PKPPm+PPcS ScSScSm-ScS SPS660-S --reverse-colormap --camera-view 210,10,0,0,20 --label 'Vp [km/s]' --light-intensity 0.5 --light-azimuth 140 --light-elevation 35
+Example (from workflow): pvpython utils/pvsm\_generator.py mesh/Mesh\_VpVsRho.vtk --color-by Vp --phases-dir phases\_EQ001\_STA01 --phases PKIIKP PKPPm+PPcS ScSScSm-ScS SPS660-S --reverse-colormap --camera-view 210,10,0,0,20 --label 'Vp [km/s]' --light-intensity 0.5 --light-azimuth 140 --light-elevation 35
 Notes: Requires pvpython or ParaView Python env; adds rays as tubes, sources/receivers as spheres.
 
 \section{Examples}

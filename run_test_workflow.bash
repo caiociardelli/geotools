@@ -124,8 +124,8 @@ echo "Plotting mesh..."
 # Generate a ParaView state file for 3D visualization of mesh and ray paths
 echo ""
 echo "Creating Paraview plot to visualize mesh and ray paths..."
-python utils/pvsm_generator.py mesh/Mesh_VpVsRho.vtk --color-by Vp --phases-dir phases_EQ001_STA01 --phases PKIIKP PKPPm+PPcS ScSScSm-ScS SPS660-S \
-       --reverse-colormap --camera-view 210,10,0,0,20 --label 'Vp [km/s]' --light-intensity 0.5 --light-azimuth 140 --light-elevation 35
+pvpython utils/pvsm_generator.py mesh/Mesh_VpVsRho.vtk --color-by Vp --phases-dir phases_EQ001_STA01 --phases PKIIKP PKPPm+PPcS ScSScSm-ScS SPS660-S \
+         --reverse-colormap --camera-view 210,10,0,0,20 --label 'Vp [km/s]' --light-intensity 0.5 --light-azimuth 140 --light-elevation 35
 
 # Compute travel times using the ttimes binary
 echo ""

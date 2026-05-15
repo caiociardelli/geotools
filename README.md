@@ -161,7 +161,7 @@ For help:
     ```
   * **`pvsm_generator.py`**: Generates ParaView state files.
     ```bash
-    python utils/pvsm_generator.py mesh/Mesh_VpVsRho.vtk --color-by Vp --phases-dir phases_EQ001_STA01 --phases PKIIKP PKPPm+PPcS ScSScSm-ScS SPS660-S
+    pvpython utils/pvsm_generator.py mesh/Mesh_VpVsRho.vtk --color-by Vp --phases-dir phases_EQ001_STA01 --phases PKIIKP PKPPm+PPcS ScSScSm-ScS SPS660-S
     ```
 
 -----
