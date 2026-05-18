@@ -63,13 +63,14 @@ The GeoTools Package requires the following software and libraries:
     \item \textbf{Python 3.7 or later}: For Python scripts (compute\_rays.py, resample\_1d\_model.py, pvsm\_generator.py).
     \item \textbf{Python libraries}:
         \begin{itemize}
-            \item NumPy: Data processing and arrays (used in compute\_rays.py, resample\_1d\_model.py).
-            \item Matplotlib: Plotting (used in resample\_1d\_model.py and optionally in compute\_rays.py).
+            \item NumPy>1.26.4: Data processing and arrays (used in compute\_rays.py, resample\_1d\_model.py).
+            \item Matplotlib>3.7.2: Plotting (used in resample\_1d\_model.py and optionally in compute\_rays.py).
+            \item PvPython>3.12.7: Python with Paraview bindings (required for pvsm\_generator.py).
+            \item OpenMPI>5.0: OpenMPI for parallel execution (required for gravity field computation).
             \item SeisTracer: Seismic ray tracing library (required for compute\_rays.py).
             \item argparse: Command-line parsing (standard library).
             \item heapq, math: Standard libraries for algorithms and calculations.
             \item os, shutil: Standard libraries for file handling.
-            \item paraview: Python package for ParaView scripting (required for pvsm\_generator.py).
         \end{itemize}
     \item \textbf{GMT (Generic Mapping Tools)}: For generating plots (used in plot\_mesh.bash and plot\_gravity.bash).
     \item \textbf{ParaView}: Installation with Python support for 3D visualization (pvsm\_generator.py generates .pvsm state files for interactive rendering).
