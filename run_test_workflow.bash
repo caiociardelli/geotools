@@ -86,8 +86,11 @@ echo "Bulding Joint Inversion Program..."
 
 # Remove previous output files and directories to ensure a clean build
 rm -fv input/1d_moho_radius.dat input/input.model
-rm -fv mesh/*
+rm -rfv mesh/
 rm -rfv phases_EQ001_STA01/ *.txt *.dat *.png *.vtk *.pvsm *.grd gmt.history d01a_rescaled
+
+# Create mesh directory
+mkdir -p mesh
 
 # Clean previous build artifacts
 make clean
