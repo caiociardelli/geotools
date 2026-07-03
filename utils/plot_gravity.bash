@@ -98,7 +98,8 @@ gmt makecpt -Cextra/CET-D01A.cpt -T$cbmin/$cbmax -I > d01a_rescaled
 # Generate figure
 gmt begin $output png
   gmt set FONT_TITLE 20p,Helvetica
-  gmt grdimage $grdname -JR0/12c -Rg -Bxa90fg90 -Bya30fg30 -BWeSn+t"Synthetic Gravity - ETOPO" -Cd01a_rescaled
+  #gmt grdimage $grdname -JR0/12c -Rg -Bxa90fg90 -Bya30fg30 -BWeSn+t"Synthetic Gravity - ETOPO" -Cd01a_rescaled
+  gmt grdimage $grdname -JR0/12c -R-180/180/-90/90 -Bxa90fg90 -Bya30fg30 -BWeSn+t"Synthetic Gravity - ETOPO" -Cd01a_rescaled
   gmt coast -W0.2,50
   gmt colorbar -Cd01a_rescaled -Baf -DJBC+e -B+l"$label"
 gmt end

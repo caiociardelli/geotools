@@ -53,7 +53,7 @@ help_menu ()
 
   DESCRIPTION
     Runs a test workflow for the Joint Inversion Package. It generates the mesh, computes seismic-wave
-    phases, ray paths, and travel times using the PyTracer package, and calculates numerical travel times
+    phases, ray paths, and travel times using the SeisTracer package, and calculates numerical travel times
     and synthetic gravity disturbances using the Joint Inversion Package. Outputs include GMT plots showing
     mesh triangles, centers, and edges, highlighting one mesh triangle and its neighbours. For a maximum
     mesh number of 320, an additional plot displays edges, spiral, and node data, saved as PNG images.
@@ -109,9 +109,9 @@ echo ""
 echo "Resampling 1D model IASP91..."
 python utils/resample_1d_model.py -i models/iasp91.model -o input/input.model
 
-# Compute seismic ray paths using the PyTracer package
+# Compute seismic ray paths using the SeisTracer package
 echo ""
-echo "Computing ray paths using PyTracer..."
+echo "Computing ray paths using SeisTracer..."
 python utils/compute_rays.py -r input/receivers.dat -s input/sources.dat
 
 # Generate the mesh using the mesher binary
