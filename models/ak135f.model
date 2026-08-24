@@ -1,6 +1,6 @@
 #AK135f_no_mud
 #N_LINES 136
-#DISC_IDs 0 4 14 20 67 114 135
+#DISC_IDs 0 4 14 20 67 112 135
 #Depth [km]     Rho [g/cm^3]      Vp [km/s]        Vs [km/s]
      0.00          2.7200           5.8000           3.4600
     20.00          2.7200           5.8000           3.4600
